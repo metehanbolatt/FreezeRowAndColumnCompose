@@ -175,3 +175,74 @@ fun BasicSidebarLabel(
         fontSize = 16.sp
     )
 }
+
+@Composable
+fun BasicSchedule(
+    events: List<Event>,
+    modifier: Modifier = Modifier,
+    eventContent: @Composable (event: Event) -> Unit = { BasicEvent(event = it) },
+    minDate: LocalDate = events.minByOrNull(Event::start)!!.start.toLocalDate(),
+    maxDate: LocalDate = events.maxByOrNull(Event::end)!!.end.toLocalDate(),
+    dayWidth: Dp,
+    hourHeight: Dp
+) {
+    val numDays = ChronoUnit.DAYS.between(minDate, maxDate).toInt() + 1
+    val dividerColor = if (MaterialTheme.colors.isLight) Color.LightGray else Color.DarkGray
+    Layout(
+        content = {
+            events.sortedBy(Event::start).forEach { event ->
+                Box(modifier = Modifier.eventData(event = event)) {
+                    eventContent(event)
+                }
+            }
+        },
+        modifier = modifier
+            .drawBehind {
+                repeat(23) {
+                    drawLine(
+                        color = dividerColor,
+                        start = Offset(0f, (it + 1) * hourHeight.toPx()),
+                        end = Offset(size.width, (it + 1) * hourHeight.toPx()),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
+                repeat(numDays - 1) {
+                    drawLine(
+                        color = dividerColor,
+                        start = Offset((it + 1) * dayWidth.toPx(), 0f),
+                        end = Offset((it + 1) * dayWidth.toPx(), size.height),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
+            }
+    ) { measureable, constraints ->
+        val height = hourHeight.roundToPx() * 24
+        val width = dayWidth.roundToPx() * numDays
+        val placeablesWithEvents = measureable.map { measurable ->
+            val event = measurable.parentData as Event
+            val eventDurationMinutes = ChronoUnit.MINUTES.between(event.start, event.end)
+            val eventHeight = ((eventDurationMinutes / 60f) * hourHeight.toPx()).roundToInt()
+            val placeable = measurable.measure(
+                constraints = constraints.copy(
+                    minWidth = dayWidth.roundToPx(),
+                    maxWidth = dayWidth.roundToPx(),
+                    minHeight = eventHeight,
+                    maxHeight = eventHeight
+                )
+            )
+            Pair(placeable, event)
+        }
+        layout(
+            width = width,
+            height = height
+        ) {
+            placeablesWithEvents.forEach { (placeable, event) ->
+                val eventOffsetMinutes = ChronoUnit.MINUTES.between(LocalTime.MIN, event.start.toLocalTime())
+                val eventY = ((eventOffsetMinutes / 60f) * hourHeight.toPx()).roundToInt()
+                val eventOffsetDays = ChronoUnit.DAYS.between(minDate, event.start.toLocalDate()).toInt()
+                val eventX = eventOffsetDays * dayWidth.roundToPx()
+                placeable.place(eventX, eventY)
+            }
+        }
+    }
+}
