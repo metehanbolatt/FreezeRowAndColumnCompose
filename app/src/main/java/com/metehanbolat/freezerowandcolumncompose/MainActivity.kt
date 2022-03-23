@@ -4,17 +4,22 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -22,6 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.metehanbolat.freezerowandcolumncompose.ui.theme.FreezeRowAndColumnComposeTheme
+import com.metehanbolat.freezerowandcolumncompose.ui.theme.Purple500
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.temporal.ChronoUnit
@@ -60,9 +66,57 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun FreezedRowAndColumn(
-    events: List<Event>
+    events: List<Event>,
+    modifier: Modifier = Modifier,
+    eventContent: @Composable (event: Event) -> Unit = { BasicEvent(event = it) },
+    dayHeader: @Composable (day: LocalDate) -> Unit = { BasicDayHeader(day = it) },
+    minDate: LocalDate = events.minByOrNull(Event::start)!!.start.toLocalDate(),
+    maxDate: LocalDate = events.maxByOrNull(Event::end)!!.end.toLocalDate()
 ) {
+    val dayWidth = 256.dp
+    val hourHeight = 64.dp
+    val verticalScrollState = rememberScrollState()
+    val horizontalScrollState = rememberScrollState()
+    var sidebarWidth by remember { mutableStateOf(0) }
 
+    Column(
+        modifier = modifier
+    ) {
+        ScheduleHeader(
+            minDate = minDate,
+            maxDate = maxDate,
+            dayWidth = dayWidth,
+            dayHeader = dayHeader,
+            modifier = Modifier
+                .background(Purple500)
+                .padding(start = with(LocalDensity.current) { sidebarWidth.toDp() })
+                .horizontalScroll(horizontalScrollState)
+        )
+        Row(
+            modifier = Modifier.weight(1f)
+        ) {
+            ScheduleSidebar(
+                hourHeight = hourHeight,
+                modifier = Modifier
+                    .verticalScroll(verticalScrollState)
+                    .onGloballyPositioned {
+                        sidebarWidth = it.size.width
+                    }
+            )
+            BasicSchedule(
+                events = events,
+                dayWidth = dayWidth,
+                hourHeight = hourHeight,
+                eventContent = eventContent,
+                minDate = minDate,
+                maxDate = maxDate,
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(verticalScrollState)
+                    .horizontalScroll(horizontalScrollState)
+            )
+        }
+    }
 }
 
 @Composable

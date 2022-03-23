@@ -69,5 +69,12 @@ val sampleEvents = listOf(
         start = LocalDateTime.parse("2022-01-15T12:00:00"),
         end = LocalDateTime.parse("2022-01-15T13:00:00"),
         desc = "Jetpack Compose is the latest Google bet on a modern UI toolkit for Android Development.",
+    ),
+    Event(
+        name = "Go To Gym",
+        color = Color(0xFF1B998B),
+        start = LocalDateTime.parse("2022-01-17T15:00:00"),
+        end = LocalDateTime.parse("2022-01-17T17:00:00"),
+        desc = "Leg Day",
     )
 )
